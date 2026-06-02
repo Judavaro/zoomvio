@@ -12,6 +12,7 @@
 body{
   background:#0a0a1a;
   display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  width:100vw;
   min-height:100vh;min-height:100dvh;
   font-family:'Segoe UI',sans-serif;color:#fff;
   overflow:hidden;
@@ -19,11 +20,12 @@ body{
   touch-action:none;
   padding:0;margin:0;
 }
-/* game-wrapper holds title+ui+canvas, scaled as a unit */
+/* game-wrapper holds title+ui+canvas; JS applies scale transform */
 #game-wrapper{
   display:flex;flex-direction:column;align-items:center;
   width:800px;
   transform-origin:top center;
+  flex-shrink:0;
 }
 /* game-wrapper defined in body block */
 #game-title-bar{width:800px;display:flex;align-items:center;justify-content:center;padding:5px 14px;background:linear-gradient(90deg,#0a0010,#1a0040,#0a0010);border-radius:12px 12px 0 0;border:2px solid #aa44ff;border-bottom:none;position:relative;}
@@ -54,15 +56,18 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
    Right side → action buttons (attack + potion)
    ─────────────────────────────────────────────────────────── */
 #touch-controls{
-  display:none;
-  width:100vw;
-  background:rgba(0,0,0,0.82);
+  display:none;           /* shown by scaleGame on mobile */
+  width:800px;
+  max-width:100vw;
+  background:rgba(0,0,0,0.88);
   border-top:2px solid #aa44ff;
-  padding:10px 12px 14px;
+  border-radius:0 0 12px 12px;
+  padding:12px 14px 16px;
   box-sizing:border-box;
   user-select:none;
   -webkit-user-select:none;
   touch-action:none;
+  flex-shrink:0;          /* never shrink in a flex container */
 }
 /* Three-column layout */
 #tc-left, #tc-center, #tc-right{
@@ -218,6 +223,7 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
 <div id="controls">
   Mover: <span>← →</span> &nbsp; Saltar: <span>Espacio</span> &nbsp; Atacar: <span>Z</span> &nbsp; Poción: <span>P</span> &nbsp; Cambiar arma: <span>Q</span> &nbsp; Pausar: <span>Esc</span>
 </div>
+</div><!-- end game-wrapper -->
 <div id="touch-controls">
   <!-- LEFT: D-Pad for movement -->
   <span id="tc-left">
@@ -243,7 +249,6 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
     </div>
   </span>
 </div>
-</div><!-- end game-wrapper -->
 <div id="overlay"><h2 id="ot"></h2><p id="os"></p><div class="big" id="osc"></div><div id="oex"></div><div class="btns" id="obtns"></div></div>
 <div id="pause-overlay">
   <h2>⏸ PAUSA</h2>
@@ -1372,51 +1377,72 @@ if(ni){
 }
 
 // ── RESPONSIVE SCALING ────────────────────────────────────────────────────────
-// The game canvas is 800×480. The wrapper (title + UI + canvas) is ~800×580.
-// On mobile: scale the canvas+UI block to fit, then show full-width touch bar below.
+// ── RESPONSIVE SCALING ────────────────────────────────────────────────────────
+// Game canvas = 800×480. Full game block (title+UI+canvas) = 800×560 approx.
+// Strategy: scale the game block so it + the touch bar fit the full screen height.
+// The touch bar lives BELOW the game block in normal flow — no overlap ever.
+
 function scaleGame(){
-  const wrapper=document.getElementById('game-wrapper');
-  const tc=document.getElementById('touch-controls');
-  const ctrl=document.getElementById('controls');
+  const wrapper = document.getElementById('game-wrapper');
+  const tc      = document.getElementById('touch-controls');
+  const ctrl    = document.getElementById('controls');
   if(!wrapper) return;
 
-  const vw=window.innerWidth;
-  const vh=window.innerHeight;
-  // Detect mobile: has touch OR narrow screen
-  const isMobile=('ontouchstart' in window)||vw<900;
+  const vw = window.innerWidth;
+  const vh = window.innerHeight;
+  const isMobile = ('ontouchstart' in window) || vw < 900;
 
   if(isMobile){
-    // Touch bar height (approximate) so we leave room for it
-    const tcH=160; // px — touch control bar
-    // Available height for the game block (title+ui+canvas)
-    const availH=vh-tcH;
-    // Scale to fit width OR available height, whichever is smaller
-    const scale=Math.min(vw/800, availH/580);
-    wrapper.style.transform=`scale(${scale})`;
-    wrapper.style.transformOrigin='top center';
-    // Because transform doesn't affect layout flow, compensate body height
-    const scaledH=580*scale;
-    wrapper.style.marginBottom='0';
-    document.body.style.justifyContent='flex-start';
-    document.body.style.paddingTop='0';
-    // Show touch bar full-width (outside wrapper, not scaled)
-    if(tc){tc.style.display='flex';tc.style.position='fixed';
-      tc.style.bottom='0';tc.style.left='0';tc.style.zIndex='100';
-      tc.style.width='100vw';}
-    if(ctrl) ctrl.style.display='none';
+    // 1. Make touch bar visible and measure its natural height
+    tc.style.display  = 'flex';
+    tc.style.position = 'static';   // in normal flow — BELOW the game
+    tc.style.width    = '100%';
+    tc.style.maxWidth = '800px';
+    if(ctrl) ctrl.style.display = 'none';
+
+    // 2. Touch bar renders at 800px logical width; its height after scaling
+    //    will be tcH*scale — but we don't know scale yet, so iterate once.
+    //    Simpler: measure actual rendered height of tc.
+    const tcRendered = tc.getBoundingClientRect().height || 160;
+
+    // 3. Available height for the game wrapper
+    const gameBlockH = 560; // title(36) + ui(38) + canvas(480) + gap(6) ≈ 560
+    const availH     = vh - tcRendered;
+
+    // 4. Scale so game block fits width AND available height
+    const scale = Math.min(vw / 800, availH / gameBlockH, 1);
+
+    // 5. Apply scale to game wrapper only
+    wrapper.style.transform       = `scale(${scale})`;
+    wrapper.style.transformOrigin = 'top center';
+    // Collapse the extra space CSS transform leaves behind
+    const collapsedH = gameBlockH * scale;
+    wrapper.style.height          = collapsedH + 'px';
+    wrapper.style.overflow        = 'visible';
+
+    // 6. Touch bar width should match scaled game width for aesthetics
+    tc.style.width    = Math.min(vw, 800 * scale) + 'px';
+    tc.style.maxWidth = '100vw';
+
+    document.body.style.justifyContent = 'flex-start';
+    document.body.style.alignItems     = 'center';
+    document.body.style.overflowY      = 'hidden';
+
   } else {
-    // Desktop: scale only if viewport narrower than 820px, else 1:1
-    const scale=Math.min(1, vw/820);
-    wrapper.style.transform=`scale(${scale})`;
-    wrapper.style.transformOrigin='top center';
-    document.body.style.justifyContent='center';
-    if(tc) tc.style.display='none';
-    if(ctrl) ctrl.style.display='block';
+    // Desktop: 1:1 or shrink slightly if window is narrow
+    const scale = Math.min(1, vw / 820);
+    wrapper.style.transform       = `scale(${scale})`;
+    wrapper.style.transformOrigin = 'top center';
+    wrapper.style.height          = '';
+    if(tc)   tc.style.display   = 'none';
+    if(ctrl) ctrl.style.display = 'block';
+    document.body.style.justifyContent = 'center';
+    document.body.style.alignItems     = 'center';
   }
 }
-window.addEventListener('resize',scaleGame);
-// Also handle orientation change on mobile
-window.addEventListener('orientationchange',()=>setTimeout(scaleGame,200));
+
+window.addEventListener('resize', scaleGame);
+window.addEventListener('orientationchange', () => setTimeout(scaleGame, 250));
 scaleGame();
 
 // ── CONTROLS: touch + mouse (both work everywhere) ────────────────────────────
