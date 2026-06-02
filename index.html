@@ -9,8 +9,23 @@
 <title>ZoomVio — Survival RPG</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;min-height:100dvh;font-family:'Segoe UI',sans-serif;color:#fff;overflow:hidden;user-select:none;touch-action:none;}
-#game-wrapper{display:flex;flex-direction:column;align-items:center;width:100%;transform-origin:top center;}
+body{
+  background:#0a0a1a;
+  display:flex;flex-direction:column;align-items:center;justify-content:flex-start;
+  min-height:100vh;min-height:100dvh;
+  font-family:'Segoe UI',sans-serif;color:#fff;
+  overflow:hidden;
+  user-select:none;-webkit-user-select:none;
+  touch-action:none;
+  padding:0;margin:0;
+}
+/* game-wrapper holds title+ui+canvas, scaled as a unit */
+#game-wrapper{
+  display:flex;flex-direction:column;align-items:center;
+  width:800px;
+  transform-origin:top center;
+}
+/* game-wrapper defined in body block */
 #game-title-bar{width:800px;display:flex;align-items:center;justify-content:center;padding:5px 14px;background:linear-gradient(90deg,#0a0010,#1a0040,#0a0010);border-radius:12px 12px 0 0;border:2px solid #aa44ff;border-bottom:none;position:relative;}
 #game-logo{font-size:22px;font-weight:900;letter-spacing:3px;color:#fff;text-shadow:0 0 12px #aa44ff,0 0 24px #6622cc;}
 #game-logo span{color:#FAC775;text-shadow:0 0 10px #FAC775,0 0 20px #ff8800;}
@@ -32,22 +47,101 @@ body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;ju
 #ui-btns button:hover{background:#2a0050;color:#fff;}
 canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 10px 10px;}
 #controls{margin-top:4px;font-size:10px;color:#554488;text-align:center;}
-/* ── TOUCH CONTROLS ── */
-#touch-controls{display:none;width:800px;position:relative;height:130px;margin-top:4px;user-select:none;}
-#dpad{position:absolute;left:16px;bottom:8px;width:140px;height:130px;}
-.dpad-btn{position:absolute;background:rgba(170,68,255,0.25);border:2px solid rgba(170,68,255,0.6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;-webkit-tap-highlight-color:transparent;active:opacity:.7;}
-.dpad-btn:active{background:rgba(170,68,255,0.5);}
-#btn-left{left:0;top:38px;width:52px;height:52px;}
-#btn-right{left:88px;top:38px;width:52px;height:52px;}
-#btn-jump{left:36px;top:0;width:52px;height:52px;}
-#action-btns{position:absolute;right:12px;bottom:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
-.action-row{display:flex;gap:8px;}
-.act-btn{width:60px;height:60px;background:rgba(250,199,117,0.25);border:2px solid rgba(250,199,117,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-weight:700;color:#FAC775;}
-.act-btn:active{background:rgba(250,199,117,0.5);}
-#btn-attack{background:rgba(226,75,74,0.3);border-color:rgba(226,75,74,0.8);color:#ff8888;}
-#btn-potion{background:rgba(93,202,165,0.25);border-color:rgba(93,202,165,0.7);color:#5DCAA5;}
-#btn-weapon{background:rgba(255,153,68,0.25);border-color:rgba(255,153,68,0.7);color:#ffaa44;font-size:16px;}
-#btn-pause-touch{background:rgba(100,100,200,0.25);border-color:rgba(100,100,200,0.7);color:#aaaaff;font-size:16px;width:48px;height:48px;}
+/* ── TOUCH CONTROLS ──────────────────────────────────────────
+   Layout: full-width bar below canvas, split left/right for thumbs.
+   Left side  → D-Pad (move + jump)
+   Center     → utility strip (⏸ ↺🔄)
+   Right side → action buttons (attack + potion)
+   ─────────────────────────────────────────────────────────── */
+#touch-controls{
+  display:none;
+  width:100vw;
+  background:rgba(0,0,0,0.82);
+  border-top:2px solid #aa44ff;
+  padding:10px 12px 14px;
+  box-sizing:border-box;
+  user-select:none;
+  -webkit-user-select:none;
+  touch-action:none;
+}
+/* Three-column layout */
+#tc-left, #tc-center, #tc-right{
+  display:inline-flex;
+  vertical-align:middle;
+}
+#tc-left{width:44%;justify-content:flex-start;align-items:flex-end;}
+#tc-center{width:12%;justify-content:center;align-items:center;flex-direction:column;gap:6px;}
+#tc-right{width:44%;justify-content:flex-end;align-items:flex-end;}
+
+/* D-PAD */
+#dpad{
+  display:grid;
+  grid-template-columns:70px 70px 70px;
+  grid-template-rows:70px 70px;
+  gap:6px;
+}
+/* col1-row1 empty | col2-row1 jump | col3-row1 empty */
+/* col1-row2 left  | col2-row2 down-placeholder | col3-row2 right */
+#btn-jump  {grid-column:2;grid-row:1;}
+#btn-left  {grid-column:1;grid-row:2;}
+#btn-right {grid-column:3;grid-row:2;}
+
+.dpad-btn{
+  width:70px;height:70px;
+  background:rgba(170,68,255,0.22);
+  border:3px solid rgba(170,68,255,0.7);
+  border-radius:18px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:30px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  transition:background .1s;
+}
+.dpad-btn:active,.dpad-btn.pressed{background:rgba(170,68,255,0.55);}
+
+/* UTILITY STRIP (center) */
+.util-btn{
+  width:44px;height:44px;
+  background:rgba(80,80,160,0.28);
+  border:2px solid rgba(120,120,255,0.55);
+  border-radius:12px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  color:#aaaaff;
+  transition:background .1s;
+}
+.util-btn:active,.util-btn.pressed{background:rgba(120,120,255,0.5);}
+
+/* ACTION BUTTONS (right) */
+#action-btns{display:flex;flex-direction:column;gap:10px;align-items:center;}
+.act-row{display:flex;gap:10px;}
+.act-btn{
+  width:74px;height:74px;
+  border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:28px;
+  cursor:pointer;
+  -webkit-tap-highlight-color:transparent;
+  font-weight:700;
+  border:3px solid;
+  transition:background .1s, transform .08s;
+}
+.act-btn:active,.act-btn.pressed{transform:scale(0.9);}
+#btn-attack{
+  background:rgba(226,75,74,0.28);
+  border-color:rgba(226,75,74,0.85);
+  color:#ff8888;
+  width:82px;height:82px;font-size:32px;
+}
+#btn-attack:active,#btn-attack.pressed{background:rgba(226,75,74,0.6);}
+#btn-potion{
+  background:rgba(93,202,165,0.22);
+  border-color:rgba(93,202,165,0.75);
+  color:#5DCAA5;
+}
+#btn-potion:active,#btn-potion.pressed{background:rgba(93,202,165,0.5);}
 #controls span{color:#8855cc;}
 #overlay{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;padding:28px 44px;text-align:center;min-width:300px;max-width:90vw;z-index:200;}
 #overlay.gameover{background:#0d0d20f2;border:2px solid #e24b4a;}
@@ -74,23 +168,24 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
 #weapon-unlock-popup h3{color:#FAC775;font-size:18px;margin-bottom:8px;}
 #weapon-unlock-popup p{color:#ccc;font-size:13px;}
 
-/* ── MOBILE MEDIA QUERIES ── */
+/* ── RESPONSIVE MEDIA QUERIES ── */
 @media(max-width:860px){
-  #game-logo{font-size:18px;letter-spacing:2px;}
-  .bar-label{font-size:11px;min-width:22px;}
-  .bar{height:10px;}
-  #hp-bar{width:80px;}
-  #level-info{font-size:12px;}
-  #weapon-display,#potion-count-ui{font-size:11px;}
-  #ui{padding:4px 8px;gap:4px;}
-  #ui-btns button{padding:2px 6px;font-size:10px;}
-  .ebottle{width:10px;height:18px;}
-  #energy-text{font-size:10px;}
+  #game-logo{font-size:17px;letter-spacing:2px;}
+  .bar-label{font-size:10px;min-width:18px;}
+  .bar{height:10px;}#hp-bar{width:72px;}
+  #level-info{font-size:11px;}
+  #weapon-display,#potion-count-ui{font-size:10px;}
+  #ui{padding:3px 8px;gap:3px;}
+  #ui-btns button{padding:2px 5px;font-size:9px;}
+  .ebottle{width:9px;height:16px;}#energy-text{font-size:9px;}
 }
-@media(max-width:480px){
-  #game-logo{font-size:15px;letter-spacing:1px;}
-  .act-btn{width:52px;height:52px;font-size:18px;}
-  #btn-left,#btn-right,#btn-jump{width:46px;height:46px;font-size:20px;}
+/* Small phones: shrink d-pad and action btns slightly */
+@media(max-height:680px){
+  .dpad-btn{width:58px;height:58px;font-size:24px;}
+  .act-btn{width:62px;height:62px;font-size:24px;}
+  #btn-attack{width:70px;height:70px;font-size:28px;}
+  .util-btn{width:38px;height:38px;font-size:17px;}
+  #touch-controls{padding:7px 10px 10px;}
 }
 </style>
 </head>
@@ -124,21 +219,29 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
   Mover: <span>← →</span> &nbsp; Saltar: <span>Espacio</span> &nbsp; Atacar: <span>Z</span> &nbsp; Poción: <span>P</span> &nbsp; Cambiar arma: <span>Q</span> &nbsp; Pausar: <span>Esc</span>
 </div>
 <div id="touch-controls">
-  <div id="dpad">
-    <div class="dpad-btn" id="btn-left">◀</div>
-    <div class="dpad-btn" id="btn-jump">▲</div>
-    <div class="dpad-btn" id="btn-right">▶</div>
-  </div>
-  <div id="action-btns">
-    <div class="action-row">
-      <div class="act-btn" id="btn-weapon">🔄</div>
-      <div class="act-btn" id="btn-pause-touch">⏸</div>
+  <!-- LEFT: D-Pad for movement -->
+  <span id="tc-left">
+    <div id="dpad">
+      <div class="dpad-btn" id="btn-jump">▲</div>
+      <div class="dpad-btn" id="btn-left">◀</div>
+      <div class="dpad-btn" id="btn-right">▶</div>
     </div>
-    <div class="action-row">
-      <div class="act-btn" id="btn-potion">🧪</div>
-      <div class="act-btn" id="btn-attack" id="btn-atk">⚔️</div>
+  </span>
+  <!-- CENTER: utility strip — pause, restart, weapon -->
+  <span id="tc-center">
+    <div class="util-btn" id="btn-pause-touch" title="Pausar">⏸</div>
+    <div class="util-btn" id="btn-restart-touch" title="Reiniciar">↺</div>
+    <div class="util-btn" id="btn-weapon" title="Arma">🔄</div>
+  </span>
+  <!-- RIGHT: action buttons — attack + potion -->
+  <span id="tc-right">
+    <div id="action-btns">
+      <div class="act-row">
+        <div class="act-btn" id="btn-potion" title="Poción">🧪</div>
+        <div class="act-btn" id="btn-attack" title="Atacar">⚔️</div>
+      </div>
     </div>
-  </div>
+  </span>
 </div>
 </div><!-- end game-wrapper -->
 <div id="overlay"><h2 id="ot"></h2><p id="os"></p><div class="big" id="osc"></div><div id="oex"></div><div class="btns" id="obtns"></div></div>
@@ -1269,122 +1372,126 @@ if(ni){
 }
 
 // ── RESPONSIVE SCALING ────────────────────────────────────────────────────────
+// The game canvas is 800×480. The wrapper (title + UI + canvas) is ~800×580.
+// On mobile: scale the canvas+UI block to fit, then show full-width touch bar below.
 function scaleGame(){
   const wrapper=document.getElementById('game-wrapper');
-  if(!wrapper) return;
-  const vw=window.innerWidth;
-  const vh=window.innerHeight;
-  const isMobile=vw<860||'ontouchstart' in window;
-
-  // Game content is 800px wide. Scale to fit viewport.
-  let scale=Math.min(vw/800, vh/(isMobile?580:560));
-  scale=Math.min(scale,1); // never scale up on desktop
-  wrapper.style.transform=`scale(${scale})`;
-  wrapper.style.marginTop='0';
-
-  // Show/hide touch controls
   const tc=document.getElementById('touch-controls');
   const ctrl=document.getElementById('controls');
+  if(!wrapper) return;
+
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  // Detect mobile: has touch OR narrow screen
+  const isMobile=('ontouchstart' in window)||vw<900;
+
   if(isMobile){
-    if(tc) tc.style.display='block';
+    // Touch bar height (approximate) so we leave room for it
+    const tcH=160; // px — touch control bar
+    // Available height for the game block (title+ui+canvas)
+    const availH=vh-tcH;
+    // Scale to fit width OR available height, whichever is smaller
+    const scale=Math.min(vw/800, availH/580);
+    wrapper.style.transform=`scale(${scale})`;
+    wrapper.style.transformOrigin='top center';
+    // Because transform doesn't affect layout flow, compensate body height
+    const scaledH=580*scale;
+    wrapper.style.marginBottom='0';
+    document.body.style.justifyContent='flex-start';
+    document.body.style.paddingTop='0';
+    // Show touch bar full-width (outside wrapper, not scaled)
+    if(tc){tc.style.display='flex';tc.style.position='fixed';
+      tc.style.bottom='0';tc.style.left='0';tc.style.zIndex='100';
+      tc.style.width='100vw';}
     if(ctrl) ctrl.style.display='none';
   } else {
+    // Desktop: scale only if viewport narrower than 820px, else 1:1
+    const scale=Math.min(1, vw/820);
+    wrapper.style.transform=`scale(${scale})`;
+    wrapper.style.transformOrigin='top center';
+    document.body.style.justifyContent='center';
     if(tc) tc.style.display='none';
     if(ctrl) ctrl.style.display='block';
   }
 }
 window.addEventListener('resize',scaleGame);
+// Also handle orientation change on mobile
+window.addEventListener('orientationchange',()=>setTimeout(scaleGame,200));
 scaleGame();
 
-// ── TOUCH CONTROLS ────────────────────────────────────────────────────────────
-(function setupTouch(){
-  const touchMap={
-    'btn-left':{key:'ArrowLeft'},
-    'btn-right':{key:'ArrowRight'},
-    'btn-jump':{key:' '},
-    'btn-attack':{key:'z'},
-  };
+// ── CONTROLS: touch + mouse (both work everywhere) ────────────────────────────
+(function setupControls(){
 
-  function fakeKey(key,down){
-    keys[key]=down;
-    // For jump: trigger jump buffer immediately
-    if(key===' '&&down&&!jumpPressed){
-      jumpPressed=true;
-      if(player.onGround||player.coyoteTime>0){
-        player.vy=JUMP_FORCE;player.onGround=false;player.coyoteTime=0;
-        player.jumpBuffer=0;playSFX('jump');drainEnergy(10);
-      } else {
-        player.jumpBuffer=10;
-      }
+  // ── shared action functions ──────────────────────────────────────────────────
+  function doJump(){
+    if(player.onGround||player.coyoteTime>0){
+      player.vy=JUMP_FORCE;player.onGround=false;player.coyoteTime=0;
+      player.jumpBuffer=0;jumpPressed=true;playSFX('jump');drainEnergy(10);
+    } else {
+      player.jumpBuffer=10;
     }
-    if(key===' '&&!down) jumpPressed=false;
   }
+  function doAttack(){
+    if(player.attackCooldown<=0){
+      player.attacking=true;player.attackFrame=16;
+      player.attackCooldown=WEAPONS[currentWeaponIdx].cooldown;
+      addParticle(player.facingRight?player.x+player.w+5:player.x-15,
+        player.y+35,WEAPONS[currentWeaponIdx].color||'#FAC775',6);
+      drainEnergy(2);
+    }
+  }
+  function doPotion(){
+    if(player.potions>0&&player.hp<player.maxHp){
+      player.potions--;player.hp=Math.min(player.maxHp,player.hp+55);
+      player.glowing=true;player.glowTimer=90;
+      addParticle(player.x+21,player.y+20,'#5DCAA5',18);
+      showMsg('¡Poción! +55 HP','#5DCAA5');playSFX('potion');
+      document.getElementById('potion-count-ui').textContent='🧪 x'+player.potions;
+    }
+  }
+  function doPause(){ if(gamePaused) resumeGame(); else pauseGame(); }
+  function doRestart(){ restartGame(); }
 
-  Object.entries(touchMap).forEach(([id,{key}])=>{
+  // ── bind a button to both touch and mouse ───────────────────────────────────
+  function bindBtn(id, onDown, onUp){
     const el=document.getElementById(id);
     if(!el) return;
-    el.addEventListener('touchstart',e=>{e.preventDefault();fakeKey(key,true);},{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();fakeKey(key,false);},{passive:false});
-    el.addEventListener('touchcancel',e=>{e.preventDefault();fakeKey(key,false);},{passive:false});
-  });
-
-  // Attack button — also handles the btn-atk alias
-  ['btn-attack'].forEach(id=>{
-    const el=document.getElementById(id);
-    if(!el) return;
-    el.addEventListener('touchstart',e=>{
-      e.preventDefault();
-      if(player.attackCooldown<=0){
-        player.attacking=true;player.attackFrame=16;
-        player.attackCooldown=WEAPONS[currentWeaponIdx].cooldown;
-        addParticle(player.facingRight?player.x+player.w+5:player.x-15,player.y+35,WEAPONS[currentWeaponIdx].color||'#FAC775',6);
-        drainEnergy(2);
-      }
-    },{passive:false});
-    el.addEventListener('touchend',e=>{e.preventDefault();},{passive:false});
-  });
-
-  // Potion button
-  const potBtn=document.getElementById('btn-potion');
-  if(potBtn){
-    potBtn.addEventListener('touchstart',e=>{
-      e.preventDefault();
-      if(player.potions>0&&player.hp<player.maxHp){
-        player.potions--;player.hp=Math.min(player.maxHp,player.hp+55);
-        player.glowing=true;player.glowTimer=90;
-        addParticle(player.x+21,player.y+20,'#5DCAA5',18);
-        showMsg('¡Poción! +55 HP','#5DCAA5');playSFX('potion');
-        document.getElementById('potion-count-ui').textContent='🧪 x'+player.potions;
-      }
-    },{passive:false});
+    // Touch
+    el.addEventListener('touchstart',e=>{e.preventDefault();el.classList.add('pressed');onDown&&onDown();},{passive:false});
+    el.addEventListener('touchend',  e=>{e.preventDefault();el.classList.remove('pressed');onUp&&onUp();},{passive:false});
+    el.addEventListener('touchcancel',e=>{e.preventDefault();el.classList.remove('pressed');onUp&&onUp();},{passive:false});
+    // Mouse (works on desktop AND when testing on desktop)
+    el.addEventListener('mousedown',e=>{e.preventDefault();el.classList.add('pressed');onDown&&onDown();});
+    el.addEventListener('mouseup',  e=>{e.preventDefault();el.classList.remove('pressed');onUp&&onUp();});
+    el.addEventListener('mouseleave',e=>{if(el.classList.contains('pressed')){el.classList.remove('pressed');onUp&&onUp();}});
   }
 
-  // Weapon cycle button
-  const wepBtn=document.getElementById('btn-weapon');
-  if(wepBtn){
-    wepBtn.addEventListener('touchstart',e=>{
-      e.preventDefault();cycleWeapon();
-    },{passive:false});
-  }
+  // ── D-PAD: hold = continuous direction key ──────────────────────────────────
+  bindBtn('btn-left',
+    ()=>{keys['ArrowLeft']=true;},
+    ()=>{keys['ArrowLeft']=false;});
+  bindBtn('btn-right',
+    ()=>{keys['ArrowRight']=true;},
+    ()=>{keys['ArrowRight']=false;});
+  bindBtn('btn-jump',
+    ()=>{doJump();},
+    ()=>{jumpPressed=false;keys[' ']=false;});
 
-  // Pause touch button
-  const pauseBtn=document.getElementById('btn-pause-touch');
-  if(pauseBtn){
-    pauseBtn.addEventListener('touchstart',e=>{
-      e.preventDefault();
-      if(gamePaused) resumeGame(); else pauseGame();
-    },{passive:false});
-  }
+  // ── ACTION BUTTONS ──────────────────────────────────────────────────────────
+  bindBtn('btn-attack', ()=>doAttack(), null);
+  bindBtn('btn-potion', ()=>doPotion(), null);
 
-  // Swipe left/right on canvas for direction (optional bonus)
-  let touchStartX=0;
-  canvas.addEventListener('touchstart',e=>{
-    if(e.touches.length>0) touchStartX=e.touches[0].clientX;
-  },{passive:true});
+  // ── UTILITY STRIP ──────────────────────────────────────────────────────────
+  bindBtn('btn-pause-touch',  ()=>doPause(),   null);
+  bindBtn('btn-restart-touch',()=>doRestart(), null);
+  bindBtn('btn-weapon',       ()=>cycleWeapon(), null);
 
-  // Prevent default scroll/zoom on the whole wrapper
-  document.getElementById('game-wrapper')?.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
-  document.addEventListener('touchmove',e=>{if(e.target.closest('#game-wrapper')) e.preventDefault();},{passive:false});
+  // ── Prevent scroll/zoom on touch bar ───────────────────────────────────────
+  document.getElementById('touch-controls')
+    ?.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+  // Also block on the whole page while over game area
+  document.getElementById('game-wrapper')
+    ?.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
 })();
 </script>
 </body>
