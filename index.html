@@ -37,13 +37,13 @@ body{
 .bar{height:12px;background:#1a0030;border-radius:6px;overflow:hidden;border:1px solid #5522aa;}
 #hp-bar{width:110px;}
 #energy-bar-wrap{display:flex;align-items:center;gap:4px;}
-#energy-bottles{display:flex;gap:3px;align-items:center;}
-.ebottle{width:12px;height:22px;border-radius:3px;border:1px solid #5522aa;background:#111;overflow:hidden;position:relative;cursor:default;}
-.ebottle-fill{position:absolute;bottom:0;left:0;width:100%;background:linear-gradient(180deg,#5DCAA5,#1a8a6a);transition:height 0.1s;}
+/* Energy horizontal progress bar */
+#ene-bar-outer{width:100px;height:12px;background:#0d1a0d;border-radius:6px;overflow:hidden;border:1px solid #2a5a2a;position:relative;}
+#ene-bar-fill{height:100%;width:0%;background:linear-gradient(90deg,#1a8a6a,#5DCAA5);border-radius:6px;transition:width 0.15s;}
+#ene-count{font-size:13px;font-weight:700;color:#5DCAA5;min-width:24px;text-align:left;}
 #hp-fill{background:linear-gradient(90deg,#cc1a1a,#ff4a4a);height:100%;border-radius:6px;transition:width 0.12s;}
 #level-info{font-size:14px;color:#FAC775;font-weight:800;text-shadow:0 0 8px #FAC77588;}
 #weapon-display{font-size:13px;color:#ffbb44;font-weight:700;}
-#potion-count-ui{font-size:13px;color:#5DCAA5;font-weight:700;}
 #ui-btns{display:flex;gap:5px;}
 #ui-btns button{background:#1a0030;color:#ccaaff;border:1px solid #5522aa;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:700;}
 #ui-btns button:hover{background:#2a0050;color:#fff;}
@@ -74,9 +74,9 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
   display:inline-flex;
   vertical-align:middle;
 }
-#tc-left{width:44%;justify-content:flex-start;align-items:flex-end;}
-#tc-center{width:12%;justify-content:center;align-items:center;flex-direction:column;gap:6px;}
-#tc-right{width:44%;justify-content:flex-end;align-items:flex-end;}
+#tc-left{width:50%;justify-content:flex-start;align-items:flex-end;}
+#tc-center{width:0%;display:none;}   /* buttons moved to canvas */
+#tc-right{width:50%;justify-content:flex-end;align-items:flex-end;}
 
 /* D-PAD */
 #dpad{
@@ -179,10 +179,10 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
   .bar-label{font-size:10px;min-width:18px;}
   .bar{height:10px;}#hp-bar{width:72px;}
   #level-info{font-size:11px;}
-  #weapon-display,#potion-count-ui{font-size:10px;}
+  #weapon-display{font-size:10px;}
   #ui{padding:3px 8px;gap:3px;}
   #ui-btns button{padding:2px 5px;font-size:9px;}
-  .ebottle{width:9px;height:16px;}#energy-text{font-size:9px;}
+  #ene-bar-outer{width:70px;}#ene-count{font-size:10px;}
 }
 /* Small phones: shrink d-pad and action btns slightly */
 @media(max-height:680px){
@@ -205,13 +205,12 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
     <div class="bar" id="hp-bar"><div id="hp-fill" style="width:100%"></div></div>
     <span id="hp-text" style="font-size:12px;font-weight:700;color:#ff6655;min-width:50px;">100/100</span>
   </div>
-  <div id="energy-bar-wrap">
+  <div id="energy-bar-wrap" style="display:flex;align-items:center;gap:5px;">
     <span class="bar-label" style="color:#5DCAA5;">ENE</span>
-    <div id="energy-bottles"></div>
-    <span id="energy-text" style="font-size:11px;color:#5DCAA5;margin-left:4px;">0 botellas</span>
+    <div id="ene-bar-outer"><div id="ene-bar-fill"></div></div>
+    <span id="ene-count">x0</span>
   </div>
   <span id="weapon-display">⚔️ Mazo</span>
-  <span id="potion-count-ui">🧪 x3</span>
   <span id="level-info">Nivel 1 — Zombies: 0/10</span>
   <div id="ui-btns">
     <button onclick="pauseGame()" title="Pausar (Esc)">⏸</button>
@@ -233,12 +232,8 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
       <div class="dpad-btn" id="btn-right">▶</div>
     </div>
   </span>
-  <!-- CENTER: utility strip — pause, restart, weapon -->
-  <span id="tc-center">
-    <div class="util-btn" id="btn-pause-touch" title="Pausar">⏸</div>
-    <div class="util-btn" id="btn-restart-touch" title="Reiniciar">↺</div>
-    <div class="util-btn" id="btn-weapon" title="Arma">🔄</div>
-  </span>
+  <!-- CENTER: vacío — botones movidos al canvas HUD -->
+  <span id="tc-center"></span>
   <!-- RIGHT: action buttons — attack + potion -->
   <span id="tc-right">
     <div id="action-btns">
@@ -292,7 +287,7 @@ if(!CanvasRenderingContext2D.prototype.roundRect){
   };
 }
 const W=800,H=480,GROUND_Y=H-60,GRAVITY=0.58,JUMP_FORCE=-13.5,SPEED=4.2;
-const PH=68; // player height — used for precise platform landing
+const PH=116; // player visual height including boots (py+116 is the bottom)
 
 const WEAPONS=[
   {id:'mace',   name:'Mazo',     icon:'🔨',unlocked:true, damage:1,range:55, cooldown:28,color:'#aaa',   level:1},
@@ -318,6 +313,7 @@ const LEVELS=[
 
 let currentLevel=0,levelKills=0,totalScore=0,gameRunning=false,gamePaused=false;
 let playerName='Jugador'; // set by name prompt at startup
+let isMobileDevice=('ontouchstart' in window)||window.innerWidth<900; // updated by scaleGame
 let frame=0,bgScrollX=0;
 let bgFlashColor=null,bgFlashTimer=0;
 let bgFlashColors=['#ff4444','#44ffaa','#ffcc00','#aa44ff','#44aaff','#ff44aa','#ffffff'];
@@ -332,8 +328,8 @@ let dragon={x:W-80,y:55,vx:-0.5,fireballs:[],fireTimer:240};
 let treasure={x:W-58,y:GROUND_Y-300,found:false,open:false,openTimer:0};
 
 // Energy system
-let energyBottles=[]; // each {pct:0-100}
-let currentBottleIdx=-1;
+let energyPct=0;        // 0-100: current energy bar level
+let bottlesCollected=0; // total bottles picked up this level
 
 // Platform system — 30% moving
 const RESPAWN_PLATFORM={x:22,y:GROUND_Y-188,w:92,h:14};
@@ -412,29 +408,41 @@ function playSFX(type){
 }
 
 // ── ENERGY SYSTEM ──────────────────────────────────────────────────────────────
-function initEnergy(){energyBottles=[];currentBottleIdx=-1;updateEnergyUI();}
-function addEnergyBottle(){energyBottles.push({pct:100});currentBottleIdx=energyBottles.length-1;updateEnergyUI();playSFX('bottle');showMsg('¡Botella de energía! +100%','#5DCAA5');}
+function initEnergy(){
+  energyPct = 0;
+  bottlesCollected = 0;
+  updateEnergyUI();
+}
+function collectPotion(){
+  // Each potion fully restores the energy bar
+  energyPct = 100;
+  bottlesCollected++;
+  updateEnergyUI();
+  playSFX('potion');
+  showMsg('🧪 ¡Poción! Energía al 100%','#5DCAA5');
+}
 function drainEnergy(amount){
-  if(currentBottleIdx<0||energyBottles.length===0)return;
-  energyBottles[currentBottleIdx].pct=Math.max(0,energyBottles[currentBottleIdx].pct-amount);
-  if(energyBottles[currentBottleIdx].pct<=0){
-    energyBottles.splice(currentBottleIdx,1);
-    currentBottleIdx=energyBottles.length-1;
-  }
+  if(energyPct<=0) return;
+  energyPct = Math.max(0, energyPct - amount);
   updateEnergyUI();
 }
 function updateEnergyUI(){
-  const el=document.getElementById('energy-bottles');
-  el.innerHTML='';
-  energyBottles.forEach((b,i)=>{
-    const d=document.createElement('div');d.className='ebottle';
-    if(i===currentBottleIdx) d.style.border='1px solid #5DCAA5';
-    const f=document.createElement('div');f.className='ebottle-fill';
-    f.style.height=b.pct+'%';
-    d.appendChild(f);el.appendChild(d);
-  });
-  const txt=document.getElementById('energy-text');
-  txt.textContent=energyBottles.length>0?`B${currentBottleIdx+1}:${Math.round(energyBottles[currentBottleIdx]?.pct||0)}%`:'0 botellas';
+  const barFill = document.getElementById('ene-bar-fill');
+  const countEl = document.getElementById('ene-count');
+
+  // Bar width = current energy %
+  if(barFill){
+    barFill.style.width = energyPct + '%';
+    if(energyPct > 50)      barFill.style.background='linear-gradient(90deg,#1a8a6a,#5DCAA5)';
+    else if(energyPct > 25) barFill.style.background='linear-gradient(90deg,#8a7a00,#FAC775)';
+    else if(energyPct > 0)  barFill.style.background='linear-gradient(90deg,#8a2200,#ff6644)';
+    else                    barFill.style.background='#2a1a1a';
+  }
+  // Counter shows how many potions collected (x0 at start)
+  if(countEl){
+    countEl.textContent = 'x' + bottlesCollected;
+    countEl.style.color = bottlesCollected > 0 ? '#5DCAA5' : '#556655';
+  }
 }
 
 // ── RESET ──────────────────────────────────────────────────────────────────────
@@ -442,7 +450,7 @@ function resetPlayer(useRespawn){
   const rx=useRespawn&&respawnUnlocked?RESPAWN_PLATFORM.x+4:80;
   const ry=useRespawn&&respawnUnlocked?RESPAWN_PLATFORM.y-PH:GROUND_Y+52-PH;
   player={x:rx,y:ry,w:42,h:PH,vx:0,vy:0,onGround:false,
-    hp:100,maxHp:100,potions:3,
+    hp:100,maxHp:100,potions:0,
     attacking:false,attackFrame:0,attackCooldown:0,
     blinking:false,blinkTimer:0,facingRight:true,
     walkFrame:0,walkTimer:0,glowing:false,glowTimer:0,
@@ -486,7 +494,7 @@ function updateLevelUI(){
 }
 function updateWeaponUI(){
   const w=WEAPONS[currentWeaponIdx];
-  document.getElementById('weapon-display').textContent=w.icon+' '+w.name;
+  document.getElementById('weapon-display').textContent=w.icon+' '+w.name; const wb=document.getElementById('btn-weapon'); if(wb) wb.innerHTML='&#9876;';
 }
 function updateTitleTheme(){
   const themes=[
@@ -1070,9 +1078,8 @@ function updateEnemies(){
           bgFlashIdx++;bgFlashTimer=55;
           playSFX('kill');
           document.getElementById('level-info').textContent=`Niv.${currentLevel+1} — 💀${levelKills}/${LEVELS[currentLevel].zombies}`;
-          if(Math.random()<.28) potionDrops.push({x:e.x+17,y:e.y,vy:-4,collected:false});
-          // energy bottle drop (30% chance)
-          if(Math.random()<.3) potionDrops.push({x:e.x+17,y:e.y-20,vy:-5,collected:false,isEnergy:true});
+          // Single potion drop — restores energy bar to 100%
+          if(Math.random()<.40) potionDrops.push({x:e.x+17,y:e.y,vy:-5,collected:false});
           if(levelKills>=LEVELS[currentLevel].zombies){levelComplete=true;levelClearTimer=150;}
         }
       }
@@ -1082,7 +1089,27 @@ function updateEnemies(){
       const overlapX=Math.min(p.x+p.w,e.x+e.w)-Math.max(p.x,e.x);
       const overlapY=Math.min(p.y+p.h,e.y+e.h)-Math.max(p.y,e.y);
       if(overlapX>8&&overlapY>12){// require meaningful overlap
-        p.hp=Math.max(0,p.hp-.7);p.blinking=true;p.blinkTimer=38;}
+        p.hp=Math.max(0,p.hp-5); // 5% of max HP
+        p.blinking=true;p.blinkTimer=45;
+        // Sangrado: partículas rojas desde el cuerpo del jugador
+        for(let _i=0;_i<6;_i++){
+          const angle=Math.random()*Math.PI*2;
+          const spd=1.5+Math.random()*3;
+          particles.push({
+            x:p.x+p.w/2+Math.cos(angle)*8,
+            y:p.y+p.h/2+Math.sin(angle)*8,
+            vx:Math.cos(angle)*spd, vy:Math.sin(angle)*spd-1.5,
+            life:30+Math.random()*20, maxLife:50,
+            color:'#cc0000', size:3+Math.random()*4
+          });
+        }
+        // Gota de sangre cayendo
+        particles.push({
+          x:p.x+10+Math.random()*20, y:p.y+p.h*0.6,
+          vx:(Math.random()-.5)*.5, vy:2+Math.random()*2,
+          life:40, maxLife:40, color:'#990000', size:5
+        });
+      }
     }
   });
   enemies=enemies.filter(e=>!e.dead||e.deathTimer>0);
@@ -1091,32 +1118,106 @@ function updateEnemies(){
 
 // ── DROPS ─────────────────────────────────────────────────────────────────────
 function updateDrops(){
-  const p=player;
-  potionDrops.forEach(drop=>{
-    drop.vy+=GRAVITY*.4;drop.y+=drop.vy;
-    if(drop.y+12>=GROUND_Y+52){drop.y=GROUND_Y+52-12;drop.vy=0;}
-    if(Math.abs(drop.x-(p.x+21))<28&&Math.abs(drop.y-(p.y+34))<36){
-      drop.collected=true;
-      if(drop.isEnergy){addEnergyBottle();}
-      else{p.potions++;document.getElementById('potion-count-ui').textContent='🧪 x'+p.potions;showMsg('¡Poción!','#5DCAA5');addParticle(drop.x,drop.y,'#5DCAA5',8);}
+  const p = player;
+
+  // Generous player pickup rectangle — covers full sprite width & height
+  const pickLeft  = p.x - 20;
+  const pickRight = p.x + p.w + 20;
+  const pickTop   = p.y - 10;
+  const pickBot   = p.y + p.h + 20;  // extra below boots
+
+  for(let i = potionDrops.length - 1; i >= 0; i--){
+    const drop = potionDrops[i];
+    if(drop.collected) continue;
+
+    // ── Physics ──────────────────────────────────────────────────
+    drop.vy += GRAVITY * 0.45;
+    if(drop.vy > 12) drop.vy = 12;
+    drop.y += drop.vy;
+
+    // Ground collision
+    const dropBot = drop.y + 14;
+    if(dropBot >= GROUND_Y + 52){
+      drop.y  = GROUND_Y + 52 - 14;
+      drop.vy = 0;
     }
-  });
-  potionDrops=potionDrops.filter(d=>!d.collected);
+
+    // Platform collision
+    if(drop.vy >= 0){
+      for(const pl of platforms){
+        if(pl.fake) continue;
+        if(drop.x + 6  > pl.x &&
+           drop.x - 6  < pl.x + pl.w &&
+           drop.y + 14 >= pl.y &&
+           drop.y + 14 <= pl.y + pl.h + 10){
+          drop.y  = pl.y - 14;
+          drop.vy = 0;
+          break;
+        }
+      }
+    }
+
+    // ── Pickup detection ─────────────────────────────────────────
+    // Check if ANY part of the drop overlaps the player pickup zone
+    if(drop.x > pickLeft  &&
+       drop.x < pickRight &&
+       drop.y > pickTop   &&
+       drop.y < pickBot){
+
+      drop.collected = true;
+
+      // All bottles are potions → restore energy bar
+      collectPotion();
+      addParticle(drop.x, drop.y, '#5DCAA5', 12);
+
+      potionDrops.splice(i, 1); // remove immediately
+    }
+  }
+
+  // Clean up any remaining collected (safety net)
+  potionDrops = potionDrops.filter(d => !d.collected);
 }
 
 function drawDrops(){
   potionDrops.forEach(drop=>{
-    if(drop.isEnergy){// energy bottle
-      ctx.fillStyle='#1a3a2a';ctx.beginPath();ctx.ellipse(drop.x,drop.y+2,7,11,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#5DCAA5';ctx.beginPath();ctx.ellipse(drop.x,drop.y,6,10,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#9FE1CB';ctx.beginPath();ctx.ellipse(drop.x-2,drop.y-3,2.5,4,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#2a3a2a';ctx.fillRect(drop.x-2.5,drop.y-14,5,6);
-      ctx.fillStyle='#44ff88';ctx.font='7px sans-serif';ctx.textAlign='center';ctx.fillText('E',drop.x,drop.y+2);ctx.textAlign='left';
-    }else{
-      ctx.fillStyle='#5DCAA5';ctx.beginPath();ctx.ellipse(drop.x,drop.y,7,10,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#9FE1CB';ctx.beginPath();ctx.ellipse(drop.x-2,drop.y-3,2.5,4,0,0,Math.PI*2);ctx.fill();
-      ctx.fillStyle='#2a3a2a';ctx.fillRect(drop.x-2.5,drop.y-16,5,8);
-    }
+    const pulse = 0.6 + Math.sin(frame * 0.18 + drop.x * 0.05) * 0.4;
+
+    // Outer glow ring
+    ctx.globalAlpha = pulse * 0.35;
+    ctx.fillStyle = '#5DCAA5';
+    ctx.beginPath(); ctx.arc(drop.x, drop.y, 18, 0, Math.PI*2); ctx.fill();
+    ctx.globalAlpha = 1;
+
+    // Bottle body — dark outline
+    ctx.fillStyle = '#0a2018';
+    ctx.beginPath(); ctx.ellipse(drop.x, drop.y+2, 9, 13, 0, 0, Math.PI*2); ctx.fill();
+    // Bottle fill (liquid)
+    ctx.fillStyle = '#5DCAA5';
+    ctx.beginPath(); ctx.ellipse(drop.x, drop.y+1, 7, 11, 0, 0, Math.PI*2); ctx.fill();
+    // Shine
+    ctx.fillStyle = '#9FE1CB';
+    ctx.beginPath(); ctx.ellipse(drop.x-2, drop.y-2, 3, 5, 0, 0, Math.PI*2); ctx.fill();
+    // Cork / cap
+    ctx.fillStyle = '#3a5a3a';
+    ctx.fillRect(drop.x-3.5, drop.y-17, 7, 7);
+    ctx.fillStyle = '#5a8a5a';
+    ctx.fillRect(drop.x-4.5, drop.y-19, 9, 4);
+
+    // Potion icon
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 9px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🧪', drop.x, drop.y+4);
+    ctx.textAlign = 'left';
+
+    // Floating label
+    ctx.fillStyle = '#5DCAA5';
+    ctx.globalAlpha = pulse;
+    ctx.font = 'bold 9px Segoe UI';
+    ctx.textAlign = 'center';
+    ctx.fillText('POCIÓN', drop.x, drop.y - 24);
+    ctx.textAlign = 'left';
+    ctx.globalAlpha = 1;
   });
 }
 
@@ -1137,17 +1238,16 @@ function updatePlayer(){
     if(p.jumpBuffer>0&&(p.onGround||p.coyoteTime>0)){
       p.vy=JUMP_FORCE;p.onGround=false;p.coyoteTime=0;p.jumpBuffer=0;
       playSFX('jump');
-      drainEnergy(10); // 10% per jump
+      drainEnergy(15); // 15% per jump
     }
     if((keys['z']||keys['Z'])&&p.attackCooldown<=0){
       p.attacking=true;p.attackFrame=16;p.attackCooldown=WEAPONS[currentWeaponIdx].cooldown;
       addParticle(p.facingRight?p.x+p.w+5:p.x-15,p.y+35,WEAPONS[currentWeaponIdx].color||'#FAC775',6);
-      drainEnergy(2); // 2% per attack
+      drainEnergy(5); // 5% per attack
     }
-    if((keys['p']||keys['P'])&&p.potions>0&&p.hp<p.maxHp){
-      p.potions--;p.hp=Math.min(p.maxHp,p.hp+55);p.glowing=true;p.glowTimer=90;
-      addParticle(p.x+21,p.y+20,'#5DCAA5',18);showMsg('¡Poción! +55 HP','#5DCAA5');
-      playSFX('potion');document.getElementById('potion-count-ui').textContent='🧪 x'+p.potions;
+    if((keys['p']||keys['P'])&&energyPct<100){
+      // P key: show current energy info
+      showMsg('⚡ Energía: '+Math.round(energyPct)+'%','#5DCAA5');
     }
     if(keys['q']||keys['Q']) cycleWeapon();
   }else{p.vx*=.5;p.poseTimer--;if(p.poseTimer<=0){p.poseActive=false;playLevelMusic();}if(frame%6===0) addParticle(p.x+21,p.y-5,'#FAC775',4);}
@@ -1240,6 +1340,62 @@ function drawPlayerNameTag(){
   }
 }
 
+// ── Canvas HUD buttons (mobile only) ─────────────────────────────────────────
+// Drawn in top-right corner of the canvas. Hit-tested via canvas click/touch.
+const HUD_BTNS=[
+  {id:'hud-pause',  label:'⏸',  x:W-38, y:8,  w:30,h:30, action:()=>{if(gamePaused) resumeGame(); else pauseGame();}},
+  {id:'hud-restart',label:'↺',  x:W-76, y:8,  w:30,h:30, action:()=>{restartGame();}},
+  {id:'hud-weapon', label:'⚔',  x:W-114,y:8,  w:30,h:30, action:()=>{cycleWeapon();}},
+];
+let hudBtnPressed={}; // tracks visual press state
+
+function drawHUDButtons(){
+  if(!isMobileDevice) return; // only shown on mobile
+  const themes=[
+    {bg:'rgba(0,20,60,0.82)',  border:'#2266cc'},
+    {bg:'rgba(10,30,0,0.82)',  border:'#4a9a1a'},
+    {bg:'rgba(0,15,40,0.82)',  border:'#1a8aaa'},
+    {bg:'rgba(30,0,0,0.82)',   border:'#cc3300'},
+    {bg:'rgba(30,5,20,0.82)',  border:'#ff88cc'},
+    {bg:'rgba(15,0,35,0.82)',  border:'#aa44ff'},
+    {bg:'rgba(0,18,12,0.82)',  border:'#44ddff'},
+  ];
+  const th=themes[Math.min(currentLevel,6)];
+
+  HUD_BTNS.forEach(btn=>{
+    const pressed=hudBtnPressed[btn.id];
+    // Background pill
+    ctx.fillStyle=pressed?'rgba(255,255,255,0.25)':th.bg;
+    ctx.strokeStyle=th.border;ctx.lineWidth=2;
+    ctx.beginPath();ctx.roundRect(btn.x,btn.y,btn.w,btn.h,8);
+    ctx.fill();ctx.stroke();
+    // Icon
+    ctx.fillStyle='#fff';
+    ctx.font=pressed?'bold 16px serif':'16px serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    // Special icon for weapon button — show current weapon icon
+    const label=btn.id==='hud-weapon'
+      ? (WEAPONS[currentWeaponIdx]?.icon||'⚔')
+      : btn.label;
+    ctx.fillText(label, btn.x+btn.w/2, btn.y+btn.h/2);
+    ctx.textAlign='left';ctx.textBaseline='alphabetic';
+  });
+}
+
+function hitTestHUDBtn(cx,cy){
+  if(!isMobileDevice) return false;
+  // cx,cy in canvas pixel coords (already scaled by caller)
+  for(const btn of HUD_BTNS){
+    if(cx>=btn.x&&cx<=btn.x+btn.w&&cy>=btn.y&&cy<=btn.y+btn.h){
+      hudBtnPressed[btn.id]=true;
+      setTimeout(()=>{hudBtnPressed[btn.id]=false;},150);
+      btn.action();
+      return true;
+    }
+  }
+  return false;
+}
+
 function drawHUD(){
   const lv=LEVELS[currentLevel];const pct=levelKills/lv.zombies;
   // Progress bar
@@ -1251,6 +1407,8 @@ function drawHUD(){
   ctx.fillText('Nivel '+(currentLevel+1)+'/7 — '+lv.name,W/2,H-10);ctx.textAlign='left';
   // Player name tag
   drawPlayerNameTag();
+  // Mobile HUD buttons
+  drawHUDButtons();
 }
 
 // ── LEVEL ADVANCE ─────────────────────────────────────────────────────────────
@@ -1319,11 +1477,11 @@ function submitName(){
 }
 
 function restartGame(){
-  stopMusic();currentLevel=0;levelKills=0;totalScore=0;frame=0;bgScrollX=0;bgFlashTimer=0;bgFlashColor=null;bgFlashIdx=0;enemies=[];particles=[];potionDrops=[];projectiles=[];activeEnemyCount=0;spawnTimer=0;levelComplete=false;levelClearTimer=0;wakaActive=false;jumpPressed=false;respawnUnlocked=false;
+  stopMusic();currentLevel=0;levelKills=0;totalScore=0;frame=0;bgScrollX=0;bgFlashTimer=0;bgFlashColor=null;bgFlashIdx=0;enemies=[];particles=[];potionDrops=[];projectiles=[];activeEnemyCount=0;spawnTimer=0;levelComplete=false;levelClearTimer=0;wakaActive=false;jumpPressed=false;respawnUnlocked=false;energyPct=0;bottlesCollected=0;
   WEAPONS.forEach(w=>{w.unlocked=w.level===1;});currentWeaponIdx=0;
   resetPlayer(false);initLevel();
   document.getElementById('overlay').style.display='none';document.getElementById('pause-overlay').style.display='none';
-  document.getElementById('potion-count-ui').textContent='🧪 x3';
+  
   gamePaused=false;
   if(!AudioCtx) initAudio();
   // If player already named, restart directly; otherwise show name screen
@@ -1345,6 +1503,7 @@ function loop(){
   drawBackground();
   updatePlatforms();
   platforms.forEach(drawPlatform);
+  updateDrops();
   drawDrops();
   updatePlayer();
   if(!levelComplete){
@@ -1352,7 +1511,7 @@ function loop(){
     const canSpawn=activeEnemyCount<4&&levelKills+activeEnemyCount<lv.zombies;
     if(spawnTimer>=lv.spawnInterval&&canSpawn){spawnEnemy();spawnTimer=0;}
   }else{levelClearTimer--;if(levelClearTimer<=0) advanceLevel();}
-  updateEnemies();updateDragon();updateDrops();updateParticles();
+  updateEnemies();updateDragon();updateParticles();
   enemies.forEach(drawEnemy);drawPlayer();drawParticles();drawHUD();
   if(msgTimer>0){msgTimer--;if(msgTimer<=0) document.getElementById('msg').style.opacity='0';}
   requestAnimationFrame(loop);
@@ -1391,6 +1550,7 @@ function scaleGame(){
   const vw = window.innerWidth;
   const vh = window.innerHeight;
   const isMobile = ('ontouchstart' in window) || vw < 900;
+  isMobileDevice = isMobile;
 
   if(isMobile){
     // 1. Make touch bar visible and measure its natural height
@@ -1452,7 +1612,7 @@ scaleGame();
   function doJump(){
     if(player.onGround||player.coyoteTime>0){
       player.vy=JUMP_FORCE;player.onGround=false;player.coyoteTime=0;
-      player.jumpBuffer=0;jumpPressed=true;playSFX('jump');drainEnergy(10);
+      player.jumpBuffer=0;jumpPressed=true;playSFX('jump');drainEnergy(15);
     } else {
       player.jumpBuffer=10;
     }
@@ -1472,7 +1632,7 @@ scaleGame();
       player.glowing=true;player.glowTimer=90;
       addParticle(player.x+21,player.y+20,'#5DCAA5',18);
       showMsg('¡Poción! +55 HP','#5DCAA5');playSFX('potion');
-      document.getElementById('potion-count-ui').textContent='🧪 x'+player.potions;
+      
     }
   }
   function doPause(){ if(gamePaused) resumeGame(); else pauseGame(); }
@@ -1515,9 +1675,33 @@ scaleGame();
   // ── Prevent scroll/zoom on touch bar ───────────────────────────────────────
   document.getElementById('touch-controls')
     ?.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
-  // Also block on the whole page while over game area
   document.getElementById('game-wrapper')
     ?.addEventListener('touchmove',e=>e.preventDefault(),{passive:false});
+
+  // ── Canvas HUD buttons: handle touch AND mouse on the canvas ────────────────
+  function canvasCoords(e, touch){
+    // Convert screen coords → canvas logical coords (accounting for CSS scale)
+    const rect=canvas.getBoundingClientRect();
+    const scaleX=800/rect.width;   // canvas logical width / rendered width
+    const scaleY=480/rect.height;
+    const clientX=touch?e.touches[0].clientX:e.clientX;
+    const clientY=touch?e.touches[0].clientY:e.clientY;
+    return {
+      x:(clientX-rect.left)*scaleX,
+      y:(clientY-rect.top)*scaleY
+    };
+  }
+
+  canvas.addEventListener('touchstart', e=>{
+    const {x,y}=canvasCoords(e,true);
+    hitTestHUDBtn(x,y);
+    // Don't preventDefault here to allow future swipe detection
+  },{passive:true});
+
+  canvas.addEventListener('mousedown', e=>{
+    const {x,y}=canvasCoords(e,false);
+    hitTestHUDBtn(x,y);
+  });
 })();
 </script>
 </body>
