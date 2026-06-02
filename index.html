@@ -2,14 +2,19 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <title>ZoomVio — Survival RPG</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;font-family:'Segoe UI',sans-serif;color:#fff;overflow:hidden;user-select:none;}
+body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;min-height:100vh;min-height:100dvh;font-family:'Segoe UI',sans-serif;color:#fff;overflow:hidden;user-select:none;touch-action:none;}
+#game-wrapper{display:flex;flex-direction:column;align-items:center;width:100%;transform-origin:top center;}
 #game-title-bar{width:800px;display:flex;align-items:center;justify-content:center;padding:5px 14px;background:linear-gradient(90deg,#0a0010,#1a0040,#0a0010);border-radius:12px 12px 0 0;border:2px solid #aa44ff;border-bottom:none;position:relative;}
-#game-logo{font-size:24px;font-weight:900;letter-spacing:4px;color:#fff;text-shadow:0 0 12px #aa44ff,0 0 24px #6622cc;}
+#game-logo{font-size:22px;font-weight:900;letter-spacing:3px;color:#fff;text-shadow:0 0 12px #aa44ff,0 0 24px #6622cc;}
 #game-logo span{color:#FAC775;text-shadow:0 0 10px #FAC775,0 0 20px #ff8800;}
-#ui{width:800px;display:flex;justify-content:space-between;align-items:center;padding:6px 12px;background:rgba(8,4,20,0.92);border-left:2px solid #aa44ff;border-right:2px solid #aa44ff;border-bottom:none;gap:8px;flex-wrap:wrap;}
+#ui{width:800px;display:flex;justify-content:space-between;align-items:center;padding:5px 10px;background:rgba(8,4,20,0.92);border-left:2px solid #aa44ff;border-right:2px solid #aa44ff;border-bottom:none;gap:5px;flex-wrap:wrap;}
 .bar-wrap{display:flex;align-items:center;gap:4px;}
 .bar-label{font-size:13px;font-weight:700;color:#ccaaff;min-width:26px;letter-spacing:1px;}
 .bar{height:12px;background:#1a0030;border-radius:6px;overflow:hidden;border:1px solid #5522aa;}
@@ -26,9 +31,25 @@ body{background:#0a0a1a;display:flex;flex-direction:column;align-items:center;ju
 #ui-btns button{background:#1a0030;color:#ccaaff;border:1px solid #5522aa;border-radius:5px;padding:3px 8px;font-size:11px;cursor:pointer;font-weight:700;}
 #ui-btns button:hover{background:#2a0050;color:#fff;}
 canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 10px 10px;}
-#controls{margin-top:5px;font-size:10px;color:#554488;text-align:center;}
+#controls{margin-top:4px;font-size:10px;color:#554488;text-align:center;}
+/* ── TOUCH CONTROLS ── */
+#touch-controls{display:none;width:800px;position:relative;height:130px;margin-top:4px;user-select:none;}
+#dpad{position:absolute;left:16px;bottom:8px;width:140px;height:130px;}
+.dpad-btn{position:absolute;background:rgba(170,68,255,0.25);border:2px solid rgba(170,68,255,0.6);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;cursor:pointer;-webkit-tap-highlight-color:transparent;active:opacity:.7;}
+.dpad-btn:active{background:rgba(170,68,255,0.5);}
+#btn-left{left:0;top:38px;width:52px;height:52px;}
+#btn-right{left:88px;top:38px;width:52px;height:52px;}
+#btn-jump{left:36px;top:0;width:52px;height:52px;}
+#action-btns{position:absolute;right:12px;bottom:8px;display:flex;flex-direction:column;gap:8px;align-items:flex-end;}
+.action-row{display:flex;gap:8px;}
+.act-btn{width:60px;height:60px;background:rgba(250,199,117,0.25);border:2px solid rgba(250,199,117,0.7);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:20px;cursor:pointer;-webkit-tap-highlight-color:transparent;font-weight:700;color:#FAC775;}
+.act-btn:active{background:rgba(250,199,117,0.5);}
+#btn-attack{background:rgba(226,75,74,0.3);border-color:rgba(226,75,74,0.8);color:#ff8888;}
+#btn-potion{background:rgba(93,202,165,0.25);border-color:rgba(93,202,165,0.7);color:#5DCAA5;}
+#btn-weapon{background:rgba(255,153,68,0.25);border-color:rgba(255,153,68,0.7);color:#ffaa44;font-size:16px;}
+#btn-pause-touch{background:rgba(100,100,200,0.25);border-color:rgba(100,100,200,0.7);color:#aaaaff;font-size:16px;width:48px;height:48px;}
 #controls span{color:#8855cc;}
-#overlay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;padding:28px 44px;text-align:center;min-width:340px;z-index:20;}
+#overlay{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;padding:28px 44px;text-align:center;min-width:300px;max-width:90vw;z-index:200;}
 #overlay.gameover{background:#0d0d20f2;border:2px solid #e24b4a;}
 #overlay.win{background:#0d1a0df2;border:2px solid #5DCAA5;}
 #overlay h2{font-size:26px;margin-bottom:8px;}
@@ -41,20 +62,40 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
 #overlay button:hover{background:#2a7a8a;}
 #overlay button.gold{background:#4a3000;border-color:#FAC775;color:#FAC775;}
 #overlay button.gold:hover{background:#FAC775;color:#000;}
-#pause-overlay{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;padding:28px 50px;text-align:center;z-index:20;min-width:280px;}
+#pause-overlay{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);border-radius:16px;padding:28px 40px;text-align:center;z-index:200;min-width:260px;max-width:90vw;}
 #pause-overlay h2{font-size:26px;margin-bottom:6px;}
 #pause-overlay .pause-world{font-size:13px;margin-bottom:14px;opacity:0.8;}
 #pause-overlay .btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;}
 #pause-overlay button{padding:9px 20px;border-radius:8px;font-size:13px;cursor:pointer;border:1px solid;}
 #pause-overlay button:hover{filter:brightness(1.3);}
-#msg{position:absolute;top:108px;left:50%;transform:translateX(-50%);padding:4px 14px;border-radius:18px;font-size:12px;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;z-index:5;}
-#announce{position:absolute;top:140px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;opacity:0;transition:opacity 0.5s;pointer-events:none;z-index:5;text-align:center;text-shadow:0 0 20px currentColor;letter-spacing:2px;}
-#weapon-unlock-popup{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1000f0;border:2px solid #FAC775;border-radius:14px;padding:20px 32px;text-align:center;z-index:25;}
+#msg{position:fixed;top:108px;left:50%;transform:translateX(-50%);padding:4px 14px;border-radius:18px;font-size:12px;font-weight:600;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap;z-index:5;}
+#announce{position:fixed;top:140px;left:50%;transform:translateX(-50%);font-size:28px;font-weight:900;opacity:0;transition:opacity 0.5s;pointer-events:none;z-index:5;text-align:center;text-shadow:0 0 20px currentColor;letter-spacing:2px;}
+#weapon-unlock-popup{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#1a1000f0;border:2px solid #FAC775;border-radius:14px;padding:20px 32px;text-align:center;z-index:25;}
 #weapon-unlock-popup h3{color:#FAC775;font-size:18px;margin-bottom:8px;}
 #weapon-unlock-popup p{color:#ccc;font-size:13px;}
+
+/* ── MOBILE MEDIA QUERIES ── */
+@media(max-width:860px){
+  #game-logo{font-size:18px;letter-spacing:2px;}
+  .bar-label{font-size:11px;min-width:22px;}
+  .bar{height:10px;}
+  #hp-bar{width:80px;}
+  #level-info{font-size:12px;}
+  #weapon-display,#potion-count-ui{font-size:11px;}
+  #ui{padding:4px 8px;gap:4px;}
+  #ui-btns button{padding:2px 6px;font-size:10px;}
+  .ebottle{width:10px;height:18px;}
+  #energy-text{font-size:10px;}
+}
+@media(max-width:480px){
+  #game-logo{font-size:15px;letter-spacing:1px;}
+  .act-btn{width:52px;height:52px;font-size:18px;}
+  #btn-left,#btn-right,#btn-jump{width:46px;height:46px;font-size:20px;}
+}
 </style>
 </head>
 <body>
+<div id="game-wrapper">
 <div id="game-title-bar">
   <div id="game-logo">⚔️ <span>ZoomVio</span> ☠️</div>
 </div>
@@ -82,6 +123,24 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
 <div id="controls">
   Mover: <span>← →</span> &nbsp; Saltar: <span>Espacio</span> &nbsp; Atacar: <span>Z</span> &nbsp; Poción: <span>P</span> &nbsp; Cambiar arma: <span>Q</span> &nbsp; Pausar: <span>Esc</span>
 </div>
+<div id="touch-controls">
+  <div id="dpad">
+    <div class="dpad-btn" id="btn-left">◀</div>
+    <div class="dpad-btn" id="btn-jump">▲</div>
+    <div class="dpad-btn" id="btn-right">▶</div>
+  </div>
+  <div id="action-btns">
+    <div class="action-row">
+      <div class="act-btn" id="btn-weapon">🔄</div>
+      <div class="act-btn" id="btn-pause-touch">⏸</div>
+    </div>
+    <div class="action-row">
+      <div class="act-btn" id="btn-potion">🧪</div>
+      <div class="act-btn" id="btn-attack" id="btn-atk">⚔️</div>
+    </div>
+  </div>
+</div>
+</div><!-- end game-wrapper -->
 <div id="overlay"><h2 id="ot"></h2><p id="os"></p><div class="big" id="osc"></div><div id="oex"></div><div class="btns" id="obtns"></div></div>
 <div id="pause-overlay">
   <h2>⏸ PAUSA</h2>
@@ -94,11 +153,36 @@ canvas{display:block;border:2px solid #aa44ff;border-top:none;border-radius:0 0 
 </div>
 <div id="msg"></div>
 <div id="announce"></div>
+<div id="name-screen" style="display:flex;position:fixed;top:0;left:0;width:100%;height:100%;background:linear-gradient(135deg,#0a0010,#1a0040,#0a0a1a);z-index:300;flex-direction:column;align-items:center;justify-content:center;gap:20px;">
+  <div style="font-size:36px;font-weight:900;letter-spacing:4px;color:#fff;text-shadow:0 0 20px #aa44ff,0 0 40px #6622cc;">⚔️ <span style="color:#FAC775;text-shadow:0 0 16px #FAC775;">ZoomVio</span> ☠️</div>
+  <div style="font-size:13px;color:#aa88ff;letter-spacing:2px;margin-top:-10px;">SURVIVAL RPG</div>
+  <div style="display:flex;flex-direction:column;align-items:center;gap:12px;background:rgba(255,255,255,0.04);border:1px solid #aa44ff;border-radius:16px;padding:28px 36px;">
+    <label style="font-size:15px;color:#ccaaff;font-weight:600;">¿Cómo te llamas, guerrer@?</label>
+    <input id="name-input" type="text" maxlength="16" placeholder="Tu nombre aquí..."
+      style="background:#1a0030;color:#FAC775;border:2px solid #aa44ff;border-radius:10px;padding:10px 18px;font-size:18px;font-weight:700;text-align:center;outline:none;width:240px;letter-spacing:1px;"
+      autocomplete="off" autocorrect="off" spellcheck="false"/>
+    <button id="name-submit" onclick="submitName()"
+      style="background:linear-gradient(135deg,#5522aa,#aa44ff);color:#fff;border:none;border-radius:12px;padding:12px 36px;font-size:16px;font-weight:800;cursor:pointer;letter-spacing:2px;box-shadow:0 0 16px #aa44ff88;">
+      ¡JUGAR! ⚔️
+    </button>
+  </div>
+  <div style="font-size:11px;color:#554488;">Toca en cualquier lugar del campo para escribir</div>
+</div>
 <div id="weapon-unlock-popup"><h3 id="wup-title"></h3><p id="wup-desc"></p></div>
 
 <script>
 const canvas=document.getElementById('c');
 const ctx=canvas.getContext('2d');
+// roundRect polyfill for older browsers/Android
+if(!CanvasRenderingContext2D.prototype.roundRect){
+  CanvasRenderingContext2D.prototype.roundRect=function(x,y,w,h,r){
+    r=Math.min(r,w/2,h/2);
+    this.beginPath();this.moveTo(x+r,y);this.lineTo(x+w-r,y);this.quadraticCurveTo(x+w,y,x+w,y+r);
+    this.lineTo(x+w,y+h-r);this.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    this.lineTo(x+r,y+h);this.quadraticCurveTo(x,y+h,x,y+h-r);
+    this.lineTo(x,y+r);this.quadraticCurveTo(x,y,x+r,y);this.closePath();
+  };
+}
 const W=800,H=480,GROUND_Y=H-60,GRAVITY=0.58,JUMP_FORCE=-13.5,SPEED=4.2;
 const PH=68; // player height — used for precise platform landing
 
@@ -125,6 +209,7 @@ const LEVELS=[
 ];
 
 let currentLevel=0,levelKills=0,totalScore=0,gameRunning=false,gamePaused=false;
+let playerName='Jugador'; // set by name prompt at startup
 let frame=0,bgScrollX=0;
 let bgFlashColor=null,bgFlashTimer=0;
 let bgFlashColors=['#ff4444','#44ffaa','#ffcc00','#aa44ff','#44aaff','#ff44aa','#ffffff'];
@@ -993,14 +1078,71 @@ function cycleWeapon(){
 }
 
 // ── HUD ───────────────────────────────────────────────────────────────────────
+// Name style config per world
+const NAME_STYLES=[
+  // Space: cold blue glow, astronaut tag style
+  {font:'900 15px Courier New',color:'#88ccff',shadow:'#0044ff',bg:'rgba(0,10,40,0.75)',border:'#2266cc',icon:'🚀',prefix:'Astro'},
+  // Minecraft: pixel-ish yellow, block style
+  {font:'900 15px Courier New',color:'#ffee44',shadow:'#aa8800',bg:'rgba(20,40,0,0.8)',border:'#4a9a1a',icon:'⛏️',prefix:'Miner'},
+  // Water: cyan teal, bubble style
+  {font:'bold 15px Segoe UI',color:'#44ddff',shadow:'#0088aa',bg:'rgba(0,20,50,0.78)',border:'#1a8aaa',icon:'🌊',prefix:'Sub'},
+  // Fire: red-orange, flame style
+  {font:'900 15px Segoe UI',color:'#ff8844',shadow:'#cc2200',bg:'rgba(40,0,0,0.82)',border:'#cc3300',icon:'🔥',prefix:'Inferno'},
+  // Baby: pink bubbly
+  {font:'bold 15px Segoe UI',color:'#ffaadd',shadow:'#cc5588',bg:'rgba(40,10,30,0.78)',border:'#ff88cc',icon:'🍼',prefix:'Bebé'},
+  // Rainbow: multicolor rotating
+  {font:'900 15px Segoe UI',color:'#cc88ff',shadow:'#7700cc',bg:'rgba(20,0,40,0.82)',border:'#aa44ff',icon:'🌈',prefix:'Arco'},
+  // TV: cyan tech, TV static style
+  {font:'900 15px Courier New',color:'#44ffcc',shadow:'#008866',bg:'rgba(0,20,10,0.85)',border:'#44ddff',icon:'📺',prefix:'Canal'},
+];
+
+function drawPlayerNameTag(){
+  const style=NAME_STYLES[Math.min(currentLevel,6)];
+  const name=playerName||'Jugador';
+  const label=style.icon+' '+style.prefix+': '+name;
+  const x=8,y=14;
+
+  ctx.font=style.font;
+  const tw=ctx.measureText(label).width;
+  const pad=10,rh=22,rw=tw+pad*2;
+
+  // Background pill
+  ctx.fillStyle=style.bg;
+  ctx.beginPath();ctx.roundRect(x,y-rh+4,rw,rh,8);ctx.fill();
+  ctx.strokeStyle=style.border;ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.roundRect(x,y-rh+4,rw,rh,8);ctx.stroke();
+
+  // Rainbow world: animated rainbow text
+  if(currentLevel===5){
+    const chars=label.split('');
+    let cx2=x+pad;
+    const rainColors=['#ff4444','#ff8800','#ffee00','#44cc44','#4488ff','#aa44ff','#ff44cc'];
+    chars.forEach((ch,i)=>{
+      ctx.fillStyle=rainColors[(i+Math.floor(frame*.15))%rainColors.length];
+      ctx.shadowColor=ctx.fillStyle;ctx.shadowBlur=4;
+      ctx.fillText(ch,cx2,y);
+      cx2+=ctx.measureText(ch).width;
+    });
+    ctx.shadowBlur=0;
+  } else {
+    ctx.fillStyle=style.color;
+    ctx.shadowColor=style.shadow;ctx.shadowBlur=8;
+    ctx.fillText(label,x+pad,y);
+    ctx.shadowBlur=0;
+  }
+}
+
 function drawHUD(){
   const lv=LEVELS[currentLevel];const pct=levelKills/lv.zombies;
+  // Progress bar
   ctx.fillStyle='#111';ctx.fillRect(W/2-120,H-20,240,10);
   ctx.fillStyle=pct<.5?'#e24b4a':pct<.8?'#FAC775':'#5DCAA5';
   ctx.fillRect(W/2-120,H-20,Math.round(pct*240),10);
   ctx.strokeStyle='#aa44ff';ctx.lineWidth=1;ctx.strokeRect(W/2-120,H-20,240,10);
   ctx.fillStyle='#fff';ctx.font='9px Segoe UI';ctx.textAlign='center';
-  ctx.fillText(`Nivel ${currentLevel+1}/7 — ${lv.name}`,W/2,H-10);ctx.textAlign='left';
+  ctx.fillText('Nivel '+(currentLevel+1)+'/7 — '+lv.name,W/2,H-10);ctx.textAlign='left';
+  // Player name tag
+  drawPlayerNameTag();
 }
 
 // ── LEVEL ADVANCE ─────────────────────────────────────────────────────────────
@@ -1056,15 +1198,34 @@ function pauseGame(){
 }
 function resumeGame(){if(!gamePaused)return;gamePaused=false;document.getElementById('pause-overlay').style.display='none';if(!wakaActive) playLevelMusic();requestAnimationFrame(loop);}
 function exitToMenu(){gameRunning=false;gamePaused=false;stopMusic();document.getElementById('pause-overlay').style.display='none';document.getElementById('overlay').className='gameover';document.getElementById('ot').textContent='¡Hasta luego!';document.getElementById('os').textContent='Gracias por jugar ZoomVio';document.getElementById('osc').textContent='Puntos: '+totalScore;document.getElementById('oex').innerHTML='';document.getElementById('obtns').innerHTML='<button onclick="restartGame()" class="gold">Jugar de nuevo</button>';document.getElementById('overlay').style.display='block';}
+function submitName(){
+  const inp=document.getElementById('name-input');
+  const val=(inp?inp.value.trim():'') || 'Jugador';
+  playerName=val.substring(0,16);
+  const ns=document.getElementById('name-screen');
+  if(ns) ns.style.display='none';
+  if(!AudioCtx) initAudio();
+  playLevelMusic();
+  gameRunning=true;
+  requestAnimationFrame(loop);
+}
+
 function restartGame(){
   stopMusic();currentLevel=0;levelKills=0;totalScore=0;frame=0;bgScrollX=0;bgFlashTimer=0;bgFlashColor=null;bgFlashIdx=0;enemies=[];particles=[];potionDrops=[];projectiles=[];activeEnemyCount=0;spawnTimer=0;levelComplete=false;levelClearTimer=0;wakaActive=false;jumpPressed=false;respawnUnlocked=false;
   WEAPONS.forEach(w=>{w.unlocked=w.level===1;});currentWeaponIdx=0;
   resetPlayer(false);initLevel();
   document.getElementById('overlay').style.display='none';document.getElementById('pause-overlay').style.display='none';
   document.getElementById('potion-count-ui').textContent='🧪 x3';
-  gameRunning=true;gamePaused=false;
+  gamePaused=false;
   if(!AudioCtx) initAudio();
-  playLevelMusic();requestAnimationFrame(loop);
+  // If player already named, restart directly; otherwise show name screen
+  if(playerName&&playerName!=='Jugador'){
+    gameRunning=true;playLevelMusic();requestAnimationFrame(loop);
+  } else {
+    gameRunning=false;
+    const ns=document.getElementById('name-screen');if(ns) ns.style.display='flex';
+    const ni=document.getElementById('name-input');if(ni) ni.focus();
+  }
 }
 
 // ── MAIN LOOP ─────────────────────────────────────────────────────────────────
@@ -1097,7 +1258,134 @@ window.addEventListener('keydown',e=>{
 });
 window.addEventListener('keyup',e=>{keys[e.key]=false;});
 
-resetPlayer(false);initLevel();gameRunning=true;initAudio();playLevelMusic();requestAnimationFrame(loop);
+resetPlayer(false);initLevel();
+// Don't auto-start — wait for name input
+gameRunning=false;
+// Allow Enter key on name input
+const ni=document.getElementById('name-input');
+if(ni){
+  ni.focus();
+  ni.addEventListener('keydown',e=>{if(e.key==='Enter') submitName();});
+}
+
+// ── RESPONSIVE SCALING ────────────────────────────────────────────────────────
+function scaleGame(){
+  const wrapper=document.getElementById('game-wrapper');
+  if(!wrapper) return;
+  const vw=window.innerWidth;
+  const vh=window.innerHeight;
+  const isMobile=vw<860||'ontouchstart' in window;
+
+  // Game content is 800px wide. Scale to fit viewport.
+  let scale=Math.min(vw/800, vh/(isMobile?580:560));
+  scale=Math.min(scale,1); // never scale up on desktop
+  wrapper.style.transform=`scale(${scale})`;
+  wrapper.style.marginTop='0';
+
+  // Show/hide touch controls
+  const tc=document.getElementById('touch-controls');
+  const ctrl=document.getElementById('controls');
+  if(isMobile){
+    if(tc) tc.style.display='block';
+    if(ctrl) ctrl.style.display='none';
+  } else {
+    if(tc) tc.style.display='none';
+    if(ctrl) ctrl.style.display='block';
+  }
+}
+window.addEventListener('resize',scaleGame);
+scaleGame();
+
+// ── TOUCH CONTROLS ────────────────────────────────────────────────────────────
+(function setupTouch(){
+  const touchMap={
+    'btn-left':{key:'ArrowLeft'},
+    'btn-right':{key:'ArrowRight'},
+    'btn-jump':{key:' '},
+    'btn-attack':{key:'z'},
+  };
+
+  function fakeKey(key,down){
+    keys[key]=down;
+    // For jump: trigger jump buffer immediately
+    if(key===' '&&down&&!jumpPressed){
+      jumpPressed=true;
+      if(player.onGround||player.coyoteTime>0){
+        player.vy=JUMP_FORCE;player.onGround=false;player.coyoteTime=0;
+        player.jumpBuffer=0;playSFX('jump');drainEnergy(10);
+      } else {
+        player.jumpBuffer=10;
+      }
+    }
+    if(key===' '&&!down) jumpPressed=false;
+  }
+
+  Object.entries(touchMap).forEach(([id,{key}])=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart',e=>{e.preventDefault();fakeKey(key,true);},{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();fakeKey(key,false);},{passive:false});
+    el.addEventListener('touchcancel',e=>{e.preventDefault();fakeKey(key,false);},{passive:false});
+  });
+
+  // Attack button — also handles the btn-atk alias
+  ['btn-attack'].forEach(id=>{
+    const el=document.getElementById(id);
+    if(!el) return;
+    el.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      if(player.attackCooldown<=0){
+        player.attacking=true;player.attackFrame=16;
+        player.attackCooldown=WEAPONS[currentWeaponIdx].cooldown;
+        addParticle(player.facingRight?player.x+player.w+5:player.x-15,player.y+35,WEAPONS[currentWeaponIdx].color||'#FAC775',6);
+        drainEnergy(2);
+      }
+    },{passive:false});
+    el.addEventListener('touchend',e=>{e.preventDefault();},{passive:false});
+  });
+
+  // Potion button
+  const potBtn=document.getElementById('btn-potion');
+  if(potBtn){
+    potBtn.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      if(player.potions>0&&player.hp<player.maxHp){
+        player.potions--;player.hp=Math.min(player.maxHp,player.hp+55);
+        player.glowing=true;player.glowTimer=90;
+        addParticle(player.x+21,player.y+20,'#5DCAA5',18);
+        showMsg('¡Poción! +55 HP','#5DCAA5');playSFX('potion');
+        document.getElementById('potion-count-ui').textContent='🧪 x'+player.potions;
+      }
+    },{passive:false});
+  }
+
+  // Weapon cycle button
+  const wepBtn=document.getElementById('btn-weapon');
+  if(wepBtn){
+    wepBtn.addEventListener('touchstart',e=>{
+      e.preventDefault();cycleWeapon();
+    },{passive:false});
+  }
+
+  // Pause touch button
+  const pauseBtn=document.getElementById('btn-pause-touch');
+  if(pauseBtn){
+    pauseBtn.addEventListener('touchstart',e=>{
+      e.preventDefault();
+      if(gamePaused) resumeGame(); else pauseGame();
+    },{passive:false});
+  }
+
+  // Swipe left/right on canvas for direction (optional bonus)
+  let touchStartX=0;
+  canvas.addEventListener('touchstart',e=>{
+    if(e.touches.length>0) touchStartX=e.touches[0].clientX;
+  },{passive:true});
+
+  // Prevent default scroll/zoom on the whole wrapper
+  document.getElementById('game-wrapper')?.addEventListener('touchmove',e=>{e.preventDefault();},{passive:false});
+  document.addEventListener('touchmove',e=>{if(e.target.closest('#game-wrapper')) e.preventDefault();},{passive:false});
+})();
 </script>
 </body>
 </html>
